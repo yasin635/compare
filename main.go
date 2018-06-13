@@ -49,19 +49,25 @@ func main()  {
 			fmt.Println("目标文件：", *md5file, " 不存在")
 
 		}
-
 		//一文件为准，对比目录下所有文件
 		readFile(*md5file)
 		//遍历文件
 		for f,v :=range md5fileInfo {
+			//fmt.Println("dir:", *dir)
 			//目录文件夹
 			fpath := *dir
+			//fpath := ""
 			//文件名称
 			fpath += f //组合文件路径
 			//读取文件并获取文件md5值
 			tmpmd5, _ := md5SumFile(fpath)
-			if strings.Compare(tmpmd5,v) < 1{
-				fmt.Println("文件不一致:", fpath)
+			if strings.Compare(string(tmpmd5),string(v)) < 0 {
+				//fmt.Printf(" %c[%d;%d;%dm%s(f=%d,b=%d,d=%d)%c[0m ", 0x1B, 7, 47, 31, "", 31, 47, 7, 0x1B)
+				msg := "文件不一致:"+ fpath+"=>"+tmpmd5+":"+v
+				log := fmt.Sprintf(" %c[%d;%d;%dm%s[%s]%c[0m ",0x1B, 7, 47, 31, "",msg, 0x1B)
+				fmt.Println(log)
+				//fmt.Println("文件不一致:", fpath,"=>",tmpmd5,":",v)
+				//fmt.Println("比较状态:", strings.Compare(string(tmpmd5),string(v)))
 			}
 			//fmt.Println(f,v,fpath,tmpmd5)
 		}
@@ -111,18 +117,46 @@ func readDir(root string){
 			fmt.Println("err")
 			return err
 		}
-		if f.IsDir() && (path != "./" || path != ".." || path != ".") {
-			fmt.Println("dir:" + path)
-			//readDir(path) //递归读取文件夹目录
+		//判断是否权限读取
+		//file_mode := f.Mode()
+		//fmt.Println("file_model:", file_mode)
+		//prem := file_mode.Perm()
+		//fmt.Println("permission:", uint32(prem))
+		//// 73: 000 001 001 001
+		//flag := prem & os.FileMode(73)
+		//if uint32(flag) == uint32(73){
+		//	fmt.Println("没有权限：")
+		//	//return nil
+		//}
+		//ok := strings.HasSuffix(f.Name(), ".git")
+		//fmt.Println("is git:", ok," ->file:",f.Name())
+		//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"))
+		//if strings.Contains(".git/refs/remotes/origin", ".git") == false {
+		//	fmt.Println("is git:",strings.Contains(f.Name(), ".git"))
+		//}
+		//if strings.Contains(path, ".git") == false {
+		//	fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
+		//}
+		//return nil
+		if f.IsDir() && (path != "./" && path != ".." && path != "." && path != root) && strings.Contains(path, ".git") == false{
+			//fmt.Println("dir:" + path)
+			readDir(path) //递归读取文件夹目录
+			//return nil
+		}
+
+		if strings.Contains(path, ".git") == true || path == "./" || path == ".." && path == "." && path == root {
+			//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
 			return nil
 		}
+		fmt.Println("pathFile:",path)
 		//md5值计算
 		//file, _ := ioutil.ReadFile(path)
 		//fmt.Printf("%x", md5h.Sum([]byte(""))) //md5
 		//md5Value := md5.Sum(file)
 		md5Value, _ := md5SumFile(path)
 		//md5Map := make(map[string]string)
-		md5files[path] = md5Value
+		realtivePath := strings.Replace(path,root,"",-1)
+		md5files[realtivePath] = md5Value
 		//fmt.Println("file:", path)
 		//fmt.Println("MD5:", md5Value)
 		return nil
@@ -133,7 +167,7 @@ func readDir(root string){
 func md5SumFile(file string) (filemd5 string, err error){
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return
+		return "err", nil
 	}
 	//获取md5
 	value := md5.Sum(data)

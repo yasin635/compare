@@ -111,8 +111,9 @@ func readDir(root string){
 			fmt.Println("err")
 			return err
 		}
-		if f.IsDir() {
-			//fmt.Println("dir:" + path)
+		if f.IsDir() && (path != "./" || path != ".." || path != ".") {
+			fmt.Println("dir:" + path)
+			//readDir(path) //递归读取文件夹目录
 			return nil
 		}
 		//md5值计算

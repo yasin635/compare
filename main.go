@@ -9,6 +9,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"strings"
+	"regexp"
 )
 //存储文件以及对应md5码
 var md5files = make(map[string]string)
@@ -16,6 +17,8 @@ var md5files = make(map[string]string)
 var md5fileInfo = make(map[string]string)
 //临时路径
 var fpath string
+//总文件数
+var total int32
 func main()  {
 	//fmt.Println(os.Args)
 	//需要对比的目录
@@ -23,9 +26,18 @@ func main()  {
 	//目标文件
 	md5file := flag.String("md5file", "", "md5目标文件")
 	//输出md5文件目录
-	tofile := flag.String("todfile", "./md5file.json", "md5文件目录输出目录")
+	tofile := flag.String("tofile", "./md5file.json", "md5文件json目录输出目录")
 
 	flag.Parse()
+
+	//判断是否是json文件格式
+	file := *tofile
+	isjsonfile,err := regexp.MatchString(".json$", file)
+	checkError(err)
+	if isjsonfile == false {
+		fmt.Println("tofile is not a json file")
+		return
+	}
 
 	if  strings.Compare(*md5file,"") < 1 {
 		//读取目录 from
@@ -38,9 +50,22 @@ func main()  {
 		//err = ioutil.WriteFile("./md5file.txt", jsonstr)
 		data := []byte(jsonstr)
 		writeFile(data, *tofile)
+		//总文件数
+		total = int32(len(md5files))
 		fmt.Println("目标文件为空,将输出目录下md5 JSON文件",*tofile)
-		fmt.Println(jsonstr)
+		//fmt.Println(jsonstr)
 	} else {
+		//判断目录是否有添加/,没有则补上
+		fpath := *dir
+		reg := regexp.MustCompile("/$")
+		isdir := fmt.Sprintf("%q\n", reg.FindAllString(fpath, -1))
+		fmt.Println(isdir)
+		fmt.Println(len(isdir))
+
+		if len(isdir) <= 3 {
+			fpath += "/"
+		}
+		//判断是否
 		fmt.Println("目标文件为：", *md5file)
 		//判断文件是否存在
 		isfile := pathExist(*md5file)
@@ -55,29 +80,27 @@ func main()  {
 		for f,v :=range md5fileInfo {
 			//fmt.Println("dir:", *dir)
 			//目录文件夹
-			fpath := *dir
 			//fpath := ""
 			//文件名称
 			fpath += f //组合文件路径
 			//读取文件并获取文件md5值
 			tmpmd5, _ := md5SumFile(fpath)
 			if strings.Compare(string(tmpmd5),string(v)) < 0 {
-				//fmt.Printf(" %c[%d;%d;%dm%s(f=%d,b=%d,d=%d)%c[0m ", 0x1B, 7, 47, 31, "", 31, 47, 7, 0x1B)
 				msg := "文件不一致:"+ fpath+"=>"+tmpmd5+":"+v
 				log := fmt.Sprintf(" %c[%d;%d;%dm%s[%s]%c[0m ",0x1B, 7, 47, 31, "",msg, 0x1B)
 				fmt.Println(log)
-				//fmt.Println("文件不一致:", fpath,"=>",tmpmd5,":",v)
-				//fmt.Println("比较状态:", strings.Compare(string(tmpmd5),string(v)))
 			}
-			//fmt.Println(f,v,fpath,tmpmd5)
+			fpath = *dir;
 		}
+		total = int32(len(md5fileInfo))
 	}
 
 
 	fmt.Println("===========================================")
 	fmt.Println("from:", *dir)
 	fmt.Println("md5file:", *md5file)
-	fmt.Println("todfile:", *tofile)
+	fmt.Println("tofile:", *tofile)
+	fmt.Println("total file:", total)
 }
 
 //读取json文件
@@ -109,7 +132,7 @@ func writeFile(data []byte, filename string){
 
 //读取文件夹目录
 func readDir(root string){
-	fmt.Println(root)
+	//fmt.Println(root)
 	filepath.Walk(root,
 		//循环读取文件
 	func (path string, f os.FileInfo, err error) error{
@@ -144,11 +167,10 @@ func readDir(root string){
 			//return nil
 		}
 
-		if strings.Contains(path, ".git") == true || path == "./" || path == ".." && path == "." && path == root {
+		if strings.Contains(path, ".git") == true || path == "./" || path == ".." && path == "." || path == root {
 			//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
 			return nil
 		}
-		fmt.Println("pathFile:",path)
 		//md5值计算
 		//file, _ := ioutil.ReadFile(path)
 		//fmt.Printf("%x", md5h.Sum([]byte(""))) //md5
@@ -159,6 +181,7 @@ func readDir(root string){
 		md5files[realtivePath] = md5Value
 		//fmt.Println("file:", path)
 		//fmt.Println("MD5:", md5Value)
+		fmt.Println("pathFile:",path," ",md5Value)
 		return nil
 	})
 }

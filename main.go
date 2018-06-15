@@ -57,14 +57,23 @@ func main()  {
 	} else {
 		//判断目录是否有添加/,没有则补上
 		fpath := *dir
-		reg := regexp.MustCompile("/$")
-		isdir := fmt.Sprintf("%q\n", reg.FindAllString(fpath, -1))
-		fmt.Println(isdir)
-		fmt.Println(len(isdir))
+		//正则方式判断是否以/结尾
+		//reg := regexp.MustCompile("/$")
+		//isdir := fmt.Sprintf("%q\n", reg.FindAllString(fpath, -1))
+		//fmt.Println(isdir)
+		//fmt.Println(len(isdir))
 
-		if len(isdir) <= 3 {
+		//if len(isdir) <= 3 {
+		//	fpath += "/"
+		//}
+		fmt.Println(strings.HasSuffix(fpath,"/"))
+		//字符函数判断是否以/结尾
+		if strings.HasSuffix(fpath,"/") == false {
 			fpath += "/"
 		}
+		//定义目录，以免少加/
+		tmppath := fpath
+		//fmt.Println(fpath)
 		//判断是否
 		fmt.Println("目标文件为：", *md5file)
 		//判断文件是否存在
@@ -83,18 +92,21 @@ func main()  {
 			//fpath := ""
 			//文件名称
 			fpath += f //组合文件路径
+			fmt.Println(fpath)
 			//读取文件并获取文件md5值
 			tmpmd5, _ := md5SumFile(fpath)
-			if strings.Compare(string(tmpmd5),string(v)) < 0 {
+			if strings.EqualFold(string(tmpmd5),string(v)) == false {
 				msg := "文件不一致:"+ fpath+"=>"+tmpmd5+":"+v
 				log := fmt.Sprintf(" %c[%d;%d;%dm%s[%s]%c[0m ",0x1B, 7, 47, 31, "",msg, 0x1B)
 				fmt.Println(log)
+			} else {
+				//msg := "文件一致:" + fpath +"=>"+tmpmd5+":"+v
+				//fmt.Println(msg)
 			}
-			fpath = *dir;
+			fpath = tmppath;
 		}
 		total = int32(len(md5fileInfo))
 	}
-
 
 	fmt.Println("===========================================")
 	fmt.Println("from:", *dir)

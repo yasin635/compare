@@ -66,7 +66,7 @@ func main()  {
 		//if len(isdir) <= 3 {
 		//	fpath += "/"
 		//}
-		fmt.Println(strings.HasSuffix(fpath,"/"))
+		//fmt.Println(strings.HasSuffix(fpath,"/"))
 		//字符函数判断是否以/结尾
 		if strings.HasSuffix(fpath,"/") == false {
 			fpath += "/"

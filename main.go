@@ -36,6 +36,7 @@ func main()  {
 	root_path = *dir
 	if root_path == "" {
 		root_path,_ = os.Getwd()
+		root_path += "/"
 	}
 
 	//判断是否是json文件格式
@@ -165,7 +166,7 @@ func readDir(root string){
 		}
 		//判断是否权限读取
 		//过滤隐藏字符串
-		ishidefile,err := regexp.MatchString(`\\\.[a-zA-Z0-9]`, path)
+		ishidefile,err := regexp.MatchString(`[\\/]\.[a-zA-Z0-9]`, path)
 		checkError(err)
 		if ishidefile == true {
 			fmt.Println("hide file:",path)

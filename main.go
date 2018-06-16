@@ -11,6 +11,9 @@ import (
 	"strings"
 	"regexp"
 )
+
+//目录
+var root_path string
 //存储文件以及对应md5码
 var md5files = make(map[string]string)
 //校验文件信息
@@ -19,16 +22,21 @@ var md5fileInfo = make(map[string]string)
 var fpath string
 //总文件数
 var total int32
+
 func main()  {
 	//fmt.Println(os.Args)
 	//需要对比的目录
-	dir := flag.String("from", "./", "对比文件夹目录,默认当前目录")
+	dir := flag.String("from", "", "对比文件夹目录,默认当前目录")
 	//目标文件
 	md5file := flag.String("md5file", "", "md5目标文件")
 	//输出md5文件目录
 	tofile := flag.String("tofile", "./md5file.json", "md5文件json目录输出目录")
 
 	flag.Parse()
+	root_path = *dir
+	if root_path == "" {
+		root_path,_ = os.Getwd()
+	}
 
 	//判断是否是json文件格式
 	file := *tofile
@@ -41,7 +49,7 @@ func main()  {
 
 	if  strings.Compare(*md5file,"") < 1 {
 		//读取目录 from
-		readDir(*dir)
+		readDir(root_path)
 		//map转换转换字符串
 		json,err := json.Marshal(md5files)
 		checkError(err)
@@ -56,7 +64,7 @@ func main()  {
 		//fmt.Println(jsonstr)
 	} else {
 		//判断目录是否有添加/,没有则补上
-		fpath := *dir
+		fpath := root_path
 		//正则方式判断是否以/结尾
 		//reg := regexp.MustCompile("/$")
 		//isdir := fmt.Sprintf("%q\n", reg.FindAllString(fpath, -1))
@@ -112,7 +120,7 @@ func main()  {
 	}
 
 	fmt.Println("===========================================")
-	fmt.Println("from:", *dir)
+	fmt.Println("from:", root_path)
 	fmt.Println("md5file:", *md5file)
 	fmt.Println("tofile:", *tofile)
 	fmt.Println("total file:", total)
@@ -147,7 +155,7 @@ func writeFile(data []byte, filename string){
 
 //读取文件夹目录
 func readDir(root string){
-	//fmt.Println(root)
+	//fmt.Println("root", root)
 	filepath.Walk(root,
 		//循环读取文件
 	func (path string, f os.FileInfo, err error) error{
@@ -156,48 +164,38 @@ func readDir(root string){
 			return err
 		}
 		//判断是否权限读取
-		//file_mode := f.Mode()
-		//fmt.Println("file_model:", file_mode)
-		//prem := file_mode.Perm()
-		//fmt.Println("permission:", uint32(prem))
-		//// 73: 000 001 001 001
-		//flag := prem & os.FileMode(73)
-		//if uint32(flag) == uint32(73){
-		//	fmt.Println("没有权限：")
-		//	//return nil
-		//}
-		//ok := strings.HasSuffix(f.Name(), ".git")
-		//fmt.Println("is git:", ok," ->file:",f.Name())
-		//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"))
-		//if strings.Contains(".git/refs/remotes/origin", ".git") == false {
-		//	fmt.Println("is git:",strings.Contains(f.Name(), ".git"))
-		//}
-		//if strings.Contains(path, ".git") == false {
-		//	fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
-		//}
-		//return nil
-		if f.IsDir() && (path != "./" && path != ".." && path != "." && path != root) && strings.Contains(path, ".git") == false{
-			//fmt.Println("dir:" + path)
-			readDir(path) //递归读取文件夹目录
-			//return nil
-		}
-
-		//过滤隐藏文件
-		if strings.HasPrefix(path,".") == true || path == root {
-			//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
+		//过滤隐藏字符串
+		ishidefile,err := regexp.MatchString(`\\\.[a-zA-Z0-9]`, path)
+		checkError(err)
+		if ishidefile == true {
+			fmt.Println("hide file:",path)
 			return nil
 		}
-		//md5值计算
-		//file, _ := ioutil.ReadFile(path)
-		//fmt.Printf("%x", md5h.Sum([]byte(""))) //md5
-		//md5Value := md5.Sum(file)
-		md5Value, _ := md5SumFile(path)
-		//md5Map := make(map[string]string)
-		realtivePath := strings.Replace(path,root,"",-1)
-		md5files[realtivePath] = md5Value
-		//fmt.Println("file:", path)
-		//fmt.Println("MD5:", md5Value)
-		fmt.Println("pathFile:",path," ",md5Value)
+
+		if f.IsDir() && (path != "./" && path != ".." && path != "." && path != root) && strings.Contains(path, ".git") == false {
+			//fmt.Println("dir:" + path)
+			readDir(path) //递归读取文件夹目录
+			return nil
+		}else if f.IsDir() == false {
+			//过滤隐藏文件
+			if path == root || path == "" {
+				return nil
+			}
+			//md5值计算
+			//file, _ := ioutil.ReadFile(path)
+			//fmt.Printf("%x", md5h.Sum([]byte(""))) //md5
+			//md5Value := md5.Sum(file)
+			md5Value, _ := md5SumFile(path)
+			//md5Map := make(map[string]string)
+
+			realtivePath := strings.Replace(path,root_path,"",-1)
+			md5files[realtivePath] = md5Value
+			//md5files[path] = md5Value
+			//fmt.Println("file:", path)
+			//fmt.Println("MD5:", md5Value)
+			fmt.Println("pathFile:",path," ",md5Value)
+		}
+
 		return nil
 	})
 }

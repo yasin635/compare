@@ -182,7 +182,8 @@ func readDir(root string){
 			//return nil
 		}
 
-		if strings.Contains(path, ".git") == true || path == "./" || path == ".." && path == "." || path == root {
+		//过滤隐藏文件
+		if strings.HasPrefix(path,".") == true || path == root {
 			//fmt.Println("is git2:",strings.Contains(f.Name(), ".git"),"->file:",f.Name())
 			return nil
 		}

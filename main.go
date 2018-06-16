@@ -67,6 +67,9 @@ func main()  {
 		//	fpath += "/"
 		//}
 		//fmt.Println(strings.HasSuffix(fpath,"/"))
+
+		//兼容windows
+		fpath = strings.Replace(fpath,"\\", "/",-1)
 		//字符函数判断是否以/结尾
 		if strings.HasSuffix(fpath,"/") == false {
 			fpath += "/"
@@ -92,7 +95,7 @@ func main()  {
 			//fpath := ""
 			//文件名称
 			fpath += f //组合文件路径
-			fmt.Println(fpath)
+			//fmt.Println(fpath)
 			//读取文件并获取文件md5值
 			tmpmd5, _ := md5SumFile(fpath)
 			if strings.EqualFold(string(tmpmd5),string(v)) == false {
